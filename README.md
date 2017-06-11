@@ -1,6 +1,6 @@
 # Walker
 
-Walker lets you parallelly walks through the directories in you file system.
+Walker lets you parallely walks through the directories in you file system.
 For each directory at the root level, walker starts a go routine. Each of the
 go routines will recursively get all the files from the directories and
 sub directories.
