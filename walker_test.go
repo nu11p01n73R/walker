@@ -73,7 +73,7 @@ func TestWalker(t *testing.T) {
 
 	files, _ := Walk("one", func(files []string) []string {
 		return files
-	})
+	}, []string{`git`, `sw`})
 
 	if !verifyFiles(files) {
 		t.Error("Walked files not same as created files")

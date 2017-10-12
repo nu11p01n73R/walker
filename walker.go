@@ -3,6 +3,8 @@ package walker
 import (
 	"fmt"
 	"io/ioutil"
+	"regexp"
+	"strings"
 )
 
 // Function which formats and/or filters
@@ -31,6 +33,16 @@ func getFiles(dir string) []string {
 	return output
 }
 
+// Generate regex pattern from the list of file
+// to be ignored
+// Return
+//	Compiled regexp
+func buildPattern(ignore []string) *regexp.Regexp {
+	pattern := strings.Join(ignore, `|`)
+
+	return regexp.MustCompile(pattern)
+}
+
 // Returns a list of files from the root directory.
 // Walk iterates through all the subdirectories and return
 // a list of regular files.
@@ -41,9 +53,18 @@ func getFiles(dir string) []string {
 // formatFunc is called at the end of the walk to filter and/or format
 // the files.
 //
+// ignore, list of file patterns to be ignored from the parent directory.
+// Accepts regular expressions. If nothing to be ignored, has to be
+// provided as empty array.
+//
 // Returns an array of string, files and
 // error if some error occured.
-func Walk(root string, formatFunc Filter) ([]string, error) {
+func Walk(root string, formatFunc Filter, ignore []string) ([]string, error) {
+	var ignoreRegex *regexp.Regexp
+	if len(ignore) > 0 {
+		ignoreRegex = buildPattern(ignore)
+	}
+
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
 		return []string{}, err
@@ -53,6 +74,10 @@ func Walk(root string, formatFunc Filter) ([]string, error) {
 	var workerCount int
 	queue := make(chan []string)
 	for _, file := range files {
+		if ignoreRegex != nil && ignoreRegex.MatchString(file.Name()) {
+			continue
+		}
+
 		fullName := fmt.Sprintf("%s/%s", root, file.Name())
 		if !file.IsDir() {
 			output = append(output, fullName)
