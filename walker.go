@@ -15,7 +15,7 @@ type Filter func(files []string) []string
 // dir.
 // Return
 //	array of strings of files
-func getFiles(dir string) []string {
+func getFiles(dir string, ignoreRegex *regexp.Regexp) []string {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return []string{}
@@ -23,9 +23,13 @@ func getFiles(dir string) []string {
 
 	var output []string
 	for _, file := range files {
+		if ignoreRegex != nil && ignoreRegex.MatchString(file.Name()) {
+			continue
+		}
+
 		fullName := fmt.Sprintf("%s/%s", dir, file.Name())
 		if file.IsDir() {
-			output = append(output, getFiles(fullName)...)
+			output = append(output, getFiles(fullName, ignoreRegex)...)
 		} else {
 			output = append(output, fullName)
 		}
@@ -83,8 +87,8 @@ func Walk(root string, formatFunc Filter, ignore []string) ([]string, error) {
 			output = append(output, fullName)
 		} else {
 			go func() {
-				test := getFiles(fullName)
-				queue <- test
+				files := getFiles(fullName, ignoreRegex)
+				queue <- files
 			}()
 			workerCount++
 		}
